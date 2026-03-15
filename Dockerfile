@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY . /app
 
+# ── Node.js deps (browser tools) ─────────────────────────────────────────────
+RUN npm install && npm run postinstall
+
 # ── Python deps ──────────────────────────────────────────────────────────────
 RUN pip install --no-cache-dir -e '.[all]' && pip install --no-cache-dir aiohttp elephantasm
 

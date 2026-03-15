@@ -30,7 +30,9 @@ ENVEOF
 [ -n "${OPENAI_API_KEY:-}" ]       && echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> /root/.hermes/.env
 [ -n "${ANTHROPIC_API_KEY:-}" ]    && echo "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}" >> /root/.hermes/.env
 [ -n "${GITHUB_TOKEN:-}" ]         && echo "GITHUB_TOKEN=${GITHUB_TOKEN}" >> /root/.hermes/.env
-[ -n "${BROWSERBASE_API_KEY:-}" ]     && echo "BROWSERBASE_API_KEY=${BROWSERBASE_API_KEY}" >> /root/.hermes/.env
+[ -n "${BROWSERBASE_API_KEY:-}" ]  && echo "BROWSERBASE_API_KEY=${BROWSERBASE_API_KEY}" >> /root/.hermes/.env
+[ -n "${BROWSERBASE_PROJECT_ID:-}" ] && echo "BROWSERBASE_PROJECT_ID=${BROWSERBASE_PROJECT_ID}" >> /root/.hermes/.env
+[ -n "${FIRECRAWL_API_KEY:-}" ]    && echo "FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}" >> /root/.hermes/.env
 [ -n "${TELEGRAM_ALLOWED_USERS:-}" ] && echo "TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}" >> /root/.hermes/.env
 [ -n "${TELEGRAM_HOME_CHAT:-}" ]     && echo "TELEGRAM_HOME_CHAT=${TELEGRAM_HOME_CHAT}" >> /root/.hermes/.env
 [ -n "${ELEPHANTASM_API_KEY:-}" ]    && echo "ELEPHANTASM_API_KEY=${ELEPHANTASM_API_KEY}" >> /root/.hermes/.env

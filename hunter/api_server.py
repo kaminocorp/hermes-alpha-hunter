@@ -180,14 +180,22 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
         with open(workspace_dir / "mission_prompt.txt", "w") as f:
             f.write(prompt)
         
+        # Pre-flight tool validation
+        tool_validation_errors = await self._validate_hunter_tools()
+        if tool_validation_errors:
+            mission["status"] = "failed"
+            mission["error"] = f"Tool validation failed: {', '.join(tool_validation_errors)}"
+            print(f"[!] Mission {mission_id} failed tool validation: {mission['error']}")
+            return
+
         # Run Hunter Agent subprocess with timeout and monitoring  
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
             "--no-auth", 
-            "--model", "deepseek/deepseek-chat",
+            "--model", "deepseek/deepseek-v3",  # Use more capable model
             "--system-prompt-append", prompt,
             "--yolo",  # Enable autonomous mode - no human prompts
-            "--max-turns", "50",  # Complete analysis within 50 turns
+            "--max-turns", "150",  # Increased for thorough analysis
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd="/app",
@@ -201,27 +209,42 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
         )
         
         # Monitor process with timeout
+        start_time = datetime.utcnow()
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=3600)  # 1 hour max
             
+            # Enforce minimum runtime (missions should not complete in <5 minutes)
+            runtime_seconds = (datetime.utcnow() - start_time).total_seconds()
+            if runtime_seconds < 300:  # 5 minutes
+                print(f"[!] Mission {mission_id} completed suspiciously fast: {runtime_seconds}s")
+                print(f"[!] This indicates Hunter may have failed to analyze properly")
+                mission["status"] = "failed"
+                mission["error"] = f"Mission completed too quickly ({runtime_seconds}s < 300s minimum)"
+                mission["runtime_warning"] = True
+            else:
+                mission["status"] = "completed"
+            
             # Log subprocess output for debugging
-            print(f"[DEBUG] Mission {mission_id} subprocess output:")
+            print(f"[DEBUG] Mission {mission_id} subprocess output (runtime: {runtime_seconds}s):")
             if stdout:
-                print(f"STDOUT: {stdout.decode()}")
+                print(f"STDOUT: {stdout.decode()[:500]}...")  # Truncate for readability
             if stderr:
                 print(f"STDERR: {stderr.decode()}")
             
             # Update mission with results
-            mission["status"] = "completed" 
             mission["completed_at"] = datetime.utcnow().isoformat()
             mission["stdout"] = stdout.decode() if stdout else ""
             mission["stderr"] = stderr.decode() if stderr else ""
+            mission["duration"] = f"{runtime_seconds:.1f}s"
             
             # Check for generated reports
             reports = list(workspace_dir.glob("vuln_*.md"))
             mission["reports_generated"] = len(reports)
             
-            print(f"[✓] Mission {mission_id} completed with {len(reports)} reports")
+            if mission["status"] == "completed":
+                print(f"[✓] Mission {mission_id} completed with {len(reports)} reports in {runtime_seconds:.1f}s")
+            else:
+                print(f"[!] Mission {mission_id} marked as failed due to runtime warning")
             
         except asyncio.TimeoutError:
             proc.kill()
