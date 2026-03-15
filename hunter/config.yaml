@@ -1,0 +1,65 @@
+# =============================================================================
+# Hermes Alpha Hunter — Agent Configuration
+# Optimized for autonomous security analysis (one-shot missions)
+# =============================================================================
+
+# Primary model — good balance of capability and cost for code analysis
+model: "anthropic/claude-sonnet-4-20250514"
+
+# Toolsets available to the hunter
+toolsets:
+  - "terminal"
+  - "file"
+  - "web"
+  - "browser"
+  - "skills"
+  - "todo"
+  - "vision"
+
+# Agent behavior
+agent:
+  max_turns: 100            # Security analysis is complex; allow deep exploration
+  reasoning_effort: "high"  # Maximize reasoning for vulnerability analysis
+
+# Terminal — local execution inside the container
+terminal:
+  backend: "local"
+  cwd: "."
+  timeout: 300              # 5 min per command (builds, large greps)
+
+# Browser — for checking bounty program pages
+browser:
+  inactivity_timeout: 60
+  record_sessions: false
+
+# Compression — keep context window manageable over long analysis sessions
+compression:
+  enabled: true
+  threshold: 0.85           # Compress when 85% of context is used
+  summary_model: "google/gemini-3-flash-preview"
+  summary_provider: "auto"
+
+# Memory — disabled (one-shot machine, no persistence)
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+
+# Checkpoints — disabled (ephemeral container)
+checkpoints:
+  enabled: false
+
+# Display — minimal for non-interactive use
+display:
+  compact: true
+  personality: "default"
+  bell_on_complete: false
+  show_reasoning: false
+
+# Security scanning
+security:
+  redact_secrets: true
+
+# No messaging platform config needed (headless worker)
+# No TTS/STT config needed
+# No voice config needed
+# No honcho config needed

@@ -1,0 +1,35 @@
+# =============================================================================
+# Hermes Alpha Hunter — Fly.io Configuration
+# One-shot worker machine for autonomous security analysis
+# =============================================================================
+
+app = "hermes-alpha-hunter"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# No HTTP service — this is a headless worker, not a web app
+# Machines are started via `fly machine run` with env vars
+
+# Machine sizing — enough for code analysis + LLM tool calls
+# Launched per-mission via:
+#   fly machine run hermes-alpha-hunter \
+#     --vm-size shared-cpu-2x \
+#     --vm-memory 2048 \
+#     -e TARGET_REPO=https://github.com/org/repo \
+#     -e TARGET_PROGRAM=https://hackerone.com/org \
+#     -e OPENROUTER_API_KEY=sk-or-... \
+#     -e MISSION_ID=hunt_001
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = 2048              # 2 GB RAM
+
+# Auto-stop: machine exits after boot.sh completes (one-shot)
+# No restart policy — if the mission fails, check logs and re-launch
+
+[env]
+  PYTHONUNBUFFERED = "1"
+  HERMES_HOME = "/root/.hermes"
+  HERMES_YOLO_MODE = "1"
