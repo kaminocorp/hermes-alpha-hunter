@@ -173,9 +173,10 @@ Execute this mission systematically. Your goal: find and document high-value vul
         # Run Hunter Agent subprocess with timeout and monitoring  
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
-            "--no-auth", 
+            "-q", prompt,
             "--model", "deepseek/deepseek-chat",
-            "--system-prompt-append", prompt,
+            "--quiet",
+            "--yolo",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd="/app",
