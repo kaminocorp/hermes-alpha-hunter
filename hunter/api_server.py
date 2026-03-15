@@ -287,7 +287,7 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             "status": "healthy",
             "uptime": datetime.utcnow().isoformat(),
             "active_missions": len([m for m in self.missions.values() if m["status"] == "active"]),
-            "version": "v12"
+            "version": "v13"
         })
 
     async def get_session_status(self, request: web_request.Request) -> Response:
