@@ -1,65 +1,66 @@
 # =============================================================================
 # Hermes Alpha Hunter — Agent Configuration
-# Optimized for autonomous security analysis (one-shot missions)
+# Persistent gateway mode via Telegram
 # =============================================================================
 
-# Primary model — good balance of capability and cost for code analysis
-model: "anthropic/claude-sonnet-4-20250514"
+model:
+  default: "anthropic/claude-sonnet-4-20250514"
+  provider: "openrouter"
+  base_url: "https://openrouter.ai/api/v1"
 
-# Toolsets available to the hunter
-toolsets:
-  - "terminal"
-  - "file"
-  - "web"
-  - "browser"
-  - "skills"
-  - "todo"
-  - "vision"
-
-# Agent behavior
-agent:
-  max_turns: 100            # Security analysis is complex; allow deep exploration
-  reasoning_effort: "high"  # Maximize reasoning for vulnerability analysis
-
-# Terminal — local execution inside the container
-terminal:
-  backend: "local"
-  cwd: "."
-  timeout: 300              # 5 min per command (builds, large greps)
-
-# Browser — for checking bounty program pages
-browser:
-  inactivity_timeout: 60
-  record_sessions: false
-
-# Compression — keep context window manageable over long analysis sessions
 compression:
   enabled: true
-  threshold: 0.85           # Compress when 85% of context is used
+  threshold: 0.85
   summary_model: "google/gemini-3-flash-preview"
-  summary_provider: "auto"
 
-# Memory — disabled (one-shot machine, no persistence)
 memory:
-  memory_enabled: false
+  memory_enabled: true
   user_profile_enabled: false
+  memory_char_limit: 2200
+  user_char_limit: 0
+  nudge_interval: 15
+  flush_min_turns: 6
 
-# Checkpoints — disabled (ephemeral container)
-checkpoints:
-  enabled: false
+session_reset:
+  mode: idle
+  idle_minutes: 4320  # 72 hours — long missions need long context
 
-# Display — minimal for non-interactive use
+skills:
+  creation_nudge_interval: 0  # Don't nudge for skill creation
+
+agent:
+  max_turns: 200
+  verbose: false
+  reasoning_effort: "high"
+
+terminal:
+  backend: "local"
+  cwd: "/workspace"
+  timeout: 300
+  lifetime_seconds: 600
+  container_cpu: 2
+  container_memory: 2048
+  container_disk: 51200
+
+browser:
+  inactivity_timeout: 120
+
+platform_toolsets:
+  telegram: [terminal, file, web, browser, vision, skills, todo, memory, session_search, moa]
+
+toolsets:
+  - all
+
 display:
   compact: true
-  personality: "default"
-  bell_on_complete: false
+  tool_progress: all
+  background_process_notifications: all
   show_reasoning: false
 
-# Security scanning
-security:
-  redact_secrets: true
+code_execution:
+  timeout: 300
+  max_tool_calls: 50
 
-# No messaging platform config needed (headless worker)
-# No TTS/STT config needed
-# No voice config needed
-# No honcho config needed
+delegation:
+  max_iterations: 75
+  default_toolsets: ["terminal", "file", "web"]

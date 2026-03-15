@@ -1,8 +1,8 @@
 # =============================================================================
-# Hermes Alpha Hunter — One-shot bug bounty agent for Fly.io Machines
+# Hermes Alpha Hunter — Persistent Telegram gateway for bug bounty hunting
 # =============================================================================
 # Build:  docker build -t hermes-alpha-hunter .
-# Run:    fly machine run hermes-alpha-hunter -e TARGET_REPO=... -e OPENROUTER_API_KEY=...
+# Deploy: flyctl deploy --remote-only
 # =============================================================================
 
 FROM python:3.11-slim
@@ -28,27 +28,30 @@ WORKDIR /app
 COPY . /app
 
 # ── Python deps ──────────────────────────────────────────────────────────────
-RUN pip install --no-cache-dir -e '.[all]'
+RUN pip install --no-cache-dir -e '.[all]' && pip install --no-cache-dir aiohttp elephantasm
 
 # ── Hermes home structure (~/.hermes) ────────────────────────────────────────
 RUN mkdir -p /root/.hermes/skills /root/.hermes/sessions /root/.hermes/logs \
-             /root/.hermes/memories /root/.hermes/cron
+             /root/.hermes/memories /root/.hermes/cron /workspace/reports \
+             /workspace/targets
 
 # SOUL.md — the Hunter's identity and methodology
 COPY hunter/SOUL.md /root/.hermes/SOUL.md
 
-# Config — tuned for autonomous security analysis
+# Config — tuned for persistent gateway mode
 COPY hunter/config.yaml /root/.hermes/config.yaml
 
-# Skills — copy hunter-specific skills into the agent's skills directory
-# (merged with any bundled skills from the repo on first run via skills_sync)
+# Skills — security analysis skills
 COPY hunter/skills/ /root/.hermes/skills/
+
+# Hooks — Elephantasm long-term memory integration
+COPY hunter/hooks/ /root/.hermes/hooks/
 
 # ── Boot script ──────────────────────────────────────────────────────────────
 COPY hunter/boot.sh /app/boot.sh
 RUN chmod +x /app/boot.sh
 
-# ── Git config (for pushing reports) ─────────────────────────────────────────
+# ── Git config (for cloning targets and pushing reports) ─────────────────────
 RUN git config --global user.name "Hermes Alpha Hunter" \
     && git config --global user.email "hunter@hermes.nousresearch.com" \
     && git config --global init.defaultBranch main

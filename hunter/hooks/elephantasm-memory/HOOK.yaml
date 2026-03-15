@@ -1,0 +1,5 @@
+name: elephantasm-memory
+description: Integrate Elephantasm long-term memory — inject at session start, extract on agent events
+events:
+  - session:start
+  - agent:end

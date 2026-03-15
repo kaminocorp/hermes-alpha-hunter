@@ -854,6 +854,16 @@ class GatewayRunner:
         # Start background session expiry watcher for proactive memory flushing
         asyncio.create_task(self._session_expiry_watcher())
 
+        # Start Overseer API if configured
+        try:
+            from hunter.overseer_api import OverseerAPI
+            self._overseer_api = OverseerAPI(self)
+            await self._overseer_api.start()
+        except ImportError:
+            logger.debug("Overseer API not available (hunter package not installed)")
+        except Exception as e:
+            logger.warning("Overseer API failed to start: %s", e)
+
         logger.info("Press Ctrl+C to stop")
         
         return True
