@@ -89,9 +89,22 @@ else
     echo "[*] Elephantasm not configured, skipping memory injection"
 fi
 
-# ── Start the gateway ────────────────────────────────────────────────────────
-echo "[*] Starting Hermes gateway (Telegram)..."
+# ── Start the API server and gateway ──────────────────────────────────────────
+echo "[*] Starting Hunter API server on port 8080..."
 cd /app
+python3 hunter/api_server.py &
+API_SERVER_PID=$!
 
-# The gateway runs forever — this is the main process
-exec hermes gateway 2>&1
+echo "[*] Starting Hermes gateway (Telegram)..."
+hermes gateway &
+GATEWAY_PID=$!
+
+echo "[+] Hunter services started:"
+echo "    - API Server: PID $API_SERVER_PID (port 8080)"
+echo "    - Telegram Gateway: PID $GATEWAY_PID"
+
+# Wait for either process to exit and kill the other
+wait -n
+echo "[*] One service exited, shutting down..."
+kill $API_SERVER_PID $GATEWAY_PID 2>/dev/null || true
+wait
