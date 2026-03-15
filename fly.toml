@@ -9,27 +9,15 @@ primary_region = "sin"
 [build]
   dockerfile = "Dockerfile"
 
-# Overseer API on internal port 8080 (Fly private network only)
-[[services]]
-  internal_port = 8080
-  protocol = "tcp"
-  auto_stop_machines = false
-  auto_start_machines = true
-
-  [[services.ports]]
-    port = 8080
-    handlers = ["http"]
-
 [[vm]]
   size = "shared-cpu-2x"
-  memory = 2048              # 2 GB RAM
+  memory = 2048
 
 [env]
   PYTHONUNBUFFERED = "1"
   HERMES_HOME = "/root/.hermes"
   HERMES_YOLO_MODE = "1"
 
-# Restart on failure — the gateway should always be running
-[restart]
+[[restart]]
   policy = "always"
-  max_retries = 10
+  retries = 10
