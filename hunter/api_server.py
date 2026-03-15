@@ -25,6 +25,32 @@ class HunterAPI:
         
         # Ensure workspace exists
         Path("/workspace").mkdir(exist_ok=True)
+    async def _validate_hunter_tools(self) -> List[str]:
+        """Validate Hunter has all required tools configured"""
+        errors = []
+        
+        # Check essential environment variables
+        required_env_vars = [
+            "OPENROUTER_API_KEY",
+            "FIRECRAWL_API_KEY", 
+            "BROWSERBASE_API_KEY"
+        ]
+        
+        for var in required_env_vars:
+            if not os.getenv(var):
+                errors.append(f"Missing {var}")
+        
+        # Basic tool availability check
+        try:
+            import subprocess
+            result = subprocess.run(["hermes", "--version"], capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                errors.append("Hermes CLI not available or configured")
+        except Exception as e:
+            errors.append(f"Hermes CLI check failed: {e}")
+            
+        return errors
+
         
     async def deploy_mission(self, request: web_request.Request) -> Response:
         """Deploy a new mission to the Hunter"""
