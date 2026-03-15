@@ -31,9 +31,7 @@ class HunterAPI:
         
         # Check essential environment variables
         required_env_vars = [
-            "OPENROUTER_API_KEY",
-            "FIRECRAWL_API_KEY", 
-            "BROWSERBASE_API_KEY"
+            "OPENROUTER_API_KEY"
         ]
         
         for var in required_env_vars:
