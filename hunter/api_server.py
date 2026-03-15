@@ -170,9 +170,9 @@ Execute this mission systematically. Your goal: find and document high-value vul
         with open(workspace_dir / "mission_prompt.txt", "w") as f:
             f.write(prompt)
         
-        # Run Hunter Agent subprocess with timeout and monitoring
+        # Run Hunter Agent subprocess with timeout and monitoring  
         proc = await asyncio.create_subprocess_exec(
-            "python3", "-m", "hermes_agent",
+            "hermes", "run",
             "--no-auth",
             "--model", "deepseek/deepseek-chat",
             "--system-prompt-append", prompt,
@@ -184,7 +184,7 @@ Execute this mission systematically. Your goal: find and document high-value vul
                 'HERMES_SESSION_TYPE': 'hunter',
                 'HERMES_MISSION_ID': mission_id,
                 'HERMES_WORKSPACE': f'/workspace/mission_{mission_id}',
-                'PYTHONPATH': '/app'
+                'HERMES_HOME': '/root/.hermes'
             }
         )
         
