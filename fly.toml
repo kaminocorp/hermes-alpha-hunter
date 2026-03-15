@@ -4,7 +4,7 @@
 # =============================================================================
 
 app = "hermes-alpha-hunter"
-primary_region = "iad"
+primary_region = "sin"
 
 [build]
   dockerfile = "Dockerfile"
