@@ -9,6 +9,13 @@ primary_region = "sin"
 [build]
   dockerfile = "Dockerfile"
 
+# Overseer API — bearer-token protected HTTP endpoint
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+
 [[vm]]
   size = "shared-cpu-2x"
   memory = 2048
@@ -17,7 +24,3 @@ primary_region = "sin"
   PYTHONUNBUFFERED = "1"
   HERMES_HOME = "/root/.hermes"
   HERMES_YOLO_MODE = "1"
-
-[[restart]]
-  policy = "always"
-  retries = 10
