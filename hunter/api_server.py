@@ -156,6 +156,16 @@ Phase 3: Report Generation
 - Save all reports to /workspace/ for persistence
 
 Execute this mission systematically. Your goal: find and document high-value vulnerabilities for bug bounty submission.
+
+*** AUTONOMOUS OPERATION PROTOCOL ***
+You are operating autonomously. Do NOT ask for user input or guidance. Complete all phases automatically:
+1. Analyze authentication mechanisms (JWT, OAuth, session handling)
+2. Review API endpoints for IDOR vulnerabilities  
+3. Check privilege escalation paths
+4. Examine group transfer functionality for IDOR+XSS
+5. Generate final vulnerability reports in /workspace/
+
+Continue analyzing through ALL objectives without stopping for input. Make decisions autonomously.
 """
 
     async def _run_hunter_with_recovery(self, mission_id: str, prompt: str):
@@ -173,10 +183,11 @@ Execute this mission systematically. Your goal: find and document high-value vul
         # Run Hunter Agent subprocess with timeout and monitoring  
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
-            "-q", prompt,
+            "--no-auth", 
             "--model", "deepseek/deepseek-chat",
-            "--quiet",
-            "--yolo",
+            "--system-prompt-append", prompt,
+            "--yolo",  # Enable autonomous mode - no human prompts
+            "--max-turns", "50",  # Complete analysis within 50 turns
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd="/app",
