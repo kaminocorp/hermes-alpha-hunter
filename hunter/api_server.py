@@ -172,36 +172,38 @@ Execute this mission systematically. Your goal: find and document high-value vul
         
         # Run Hunter Agent subprocess with timeout and monitoring
         proc = await asyncio.create_subprocess_exec(
-            "python3", "-c", f"""
-import sys
-import os
-sys.path.insert(0, '/root/hermes-alpha-hunter')
-
-# Set environment for Hunter
-os.environ['HERMES_SESSION_TYPE'] = 'hunter'
-os.environ['HERMES_MISSION_ID'] = '{mission_id}'
-os.environ['HERMES_WORKSPACE'] = '/workspace/mission_{mission_id}'
-
-# Initialize Hunter agent
-from main import main
-main([
-    '--no-auth',
-    '--model', 'deepseek/deepseek-chat', 
-    '--session-type', 'hunter',
-    '--system-prompt-append', '''{prompt}'''
-])
-""",
+            "python3", "-m", "hermes_agent",
+            "--no-auth",
+            "--model", "deepseek/deepseek-chat",
+            "--system-prompt-append", prompt,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
+            cwd="/app",
+            env={
+                **dict(os.environ),
+                'HERMES_SESSION_TYPE': 'hunter',
+                'HERMES_MISSION_ID': mission_id,
+                'HERMES_WORKSPACE': f'/workspace/mission_{mission_id}',
+                'PYTHONPATH': '/app'
+            }
         )
         
         # Monitor process with timeout
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=3600)  # 1 hour max
             
+            # Log subprocess output for debugging
+            print(f"[DEBUG] Mission {mission_id} subprocess output:")
+            if stdout:
+                print(f"STDOUT: {stdout.decode()}")
+            if stderr:
+                print(f"STDERR: {stderr.decode()}")
+            
             # Update mission with results
-            mission["status"] = "completed"
+            mission["status"] = "completed" 
             mission["completed_at"] = datetime.utcnow().isoformat()
+            mission["stdout"] = stdout.decode() if stdout else ""
+            mission["stderr"] = stderr.decode() if stderr else ""
             
             # Check for generated reports
             reports = list(workspace_dir.glob("vuln_*.md"))
