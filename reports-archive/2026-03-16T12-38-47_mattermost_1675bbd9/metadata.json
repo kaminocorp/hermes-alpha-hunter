@@ -1,0 +1,19 @@
+{
+  "id": "1675bbd9-5eca-4fe8-b5c0-2207ed32b940",
+  "timestamp": "2026-03-16T12:38:47.766741",
+  "status": "completed",
+  "target": "https://github.com/mattermost/mattermost",
+  "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+  "objectives": [
+    "Find authentication bypasses",
+    "Find IDOR vulnerabilities",
+    "Find XSS vulnerabilities",
+    "Find SSRF in integrations/webhooks",
+    "Document all findings with PoC"
+  ],
+  "reports_generated": 2,
+  "started_at": "2026-03-16T12:38:47.767191",
+  "completed_at": "2026-03-16T12:45:55.958047",
+  "duration": "427.1s",
+  "archived_at": "2026-03-16T12:59:06.180556"
+}

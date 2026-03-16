@@ -1,0 +1,19 @@
+{
+  "id": "51dc2dcb-821e-4b33-92fa-be5b15d49f5e",
+  "timestamp": "2026-03-16T07:26:59.421804",
+  "status": "completed",
+  "target": "https://github.com/nextcloud/server",
+  "bounty_program": "Nextcloud Bug Bounty (HackerOne)",
+  "objectives": [
+    "Find IDOR in file sharing",
+    "Find auth bypass",
+    "Find SSRF in federation",
+    "Find XSS",
+    "Find privilege escalation"
+  ],
+  "reports_generated": 3,
+  "started_at": "2026-03-16T07:26:59.422758",
+  "completed_at": "2026-03-16T07:33:18.173522",
+  "duration": "375.8s",
+  "archived_at": "2026-03-16T12:59:06.156687"
+}
