@@ -567,18 +567,34 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
 
 
 
+# CORS headers for all responses
+CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
 async def create_app() -> web.Application:
     """Create the aiohttp application"""
     hunter_api = HunterAPI()
     
     app = web.Application()
     
-    # Add simple CORS middleware
+    # Add CORS middleware that wraps responses
     @web.middleware
     async def cors_middleware(request, handler):
-        resp = await handler(request)
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        return resp
+        try:
+            resp = await handler(request)
+            # Add CORS headers to all responses
+            for key, value in CORS_HEADERS.items():
+                resp.headers[key] = value
+            return resp
+        except web.HTTPException as e:
+            # Also add CORS to error responses
+            for key, value in CORS_HEADERS.items():
+                if key not in e.headers:
+                    e.headers[key] = value
+            raise
     
     app.middlewares.append(cors_middleware)
     
