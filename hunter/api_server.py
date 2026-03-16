@@ -228,9 +228,10 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
         # Run Hunter Agent subprocess with timeout and monitoring
         # Note: Using -q for single query mode with the full mission prompt
         # The Hunter's SOUL.md and skills provide the methodology context
+        # Using qwen3.5-plus which is confirmed available on OpenRouter
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
-            "-m", "deepseek/deepseek-v3",
+            "-m", "qwen/qwen3.5-plus-02-15",
             "-q", prompt,
             "--yolo",
             "-Q",  # Quiet mode for programmatic use
