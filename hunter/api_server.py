@@ -568,6 +568,26 @@ async def create_app() -> web.Application:
     
     app = web.Application()
     
+    # Add CORS middleware
+    @web.middleware
+    async def cors_middleware(request, handler):
+        if request.method == "OPTIONS":
+            return web.Response(
+                headers={
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                }
+            )
+        
+        response = await handler(request)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+    
+    app.middlewares.append(cors_middleware)
+    
     # Routes
     app.router.add_post("/api/missions", hunter_api.deploy_mission)
     app.router.add_get("/api/status", hunter_api.get_status)
