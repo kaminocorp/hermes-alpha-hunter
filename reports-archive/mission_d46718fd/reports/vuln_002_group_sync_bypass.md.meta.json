@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_002_group_sync_bypass.md",
+  "mission_id": "d46718fd-9d54-4aed-93dd-89e712a21192",
+  "discovered_at": "2026-03-16T14:31:57.924389",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-16T19:01:49.375253"
+}

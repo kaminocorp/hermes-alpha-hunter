@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_002_auth_rate_limiting.md",
+  "mission_id": "027d4290-9ce1-4072-81be-70f24b47e946",
+  "discovered_at": "2026-03-16T17:41:20.543595",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-16T19:01:49.376290"
+}
