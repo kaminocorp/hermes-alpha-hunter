@@ -57,13 +57,39 @@ class HunterAPI:
         """Deploy a new mission to the Hunter"""
         try:
             data = await request.json()
+            target = data.get("target", "")
+            
+            # BLOCKED TARGETS - Reject test/demo repos
+            blocked_targets = [
+                "juice-shop", "juiceshop", "owasp juice",
+                "dvwa", "damn vulnerable web",
+                "webgoat", "owasp webgoat",
+                "vulnerable-by-design", "intentionally vulnerable",
+                "test-target", "test-targets", "demo-target"
+            ]
+            
+            target_lower = target.lower()
+            for blocked in blocked_targets:
+                if blocked in target_lower:
+                    return web.json_response({
+                        "success": False,
+                        "error": f"BLOCKED: '{target}' is a test/demo repo. Hunter only tests REAL bounty programs. Assign a target with an active bounty (HackerOne, Bugcrowd, etc.)."
+                    }, status=400)
+            
+            # Require bounty_program field for real targets
+            if not data.get("bounty_program"):
+                return web.json_response({
+                    "success": False,
+                    "error": "MISSING BOUNTY PROGRAM: All missions must have a verified bounty program. Include 'bounty_program' field with program name (e.g., 'Mattermost Bug Bounty (HackerOne)')."
+                }, status=400)
+            
             mission_id = str(uuid.uuid4())
             
             mission = {
                 "id": mission_id,
                 "timestamp": datetime.utcnow().isoformat(),
                 "status": "deployed",
-                "target": data.get("target"),
+                "target": target,
                 "bounty_program": data.get("bounty_program"), 
                 "repository": data.get("repository"),
                 "objectives": data.get("objectives", []),
@@ -77,7 +103,7 @@ class HunterAPI:
             
             # Log the mission
             with open(self.mission_log_path, "a") as f:
-                f.write(f"{datetime.utcnow().isoformat()} DEPLOY {mission_id} {data.get('target')}\n")
+                f.write(f"{datetime.utcnow().isoformat()} DEPLOY {mission_id} {target} [{data.get('bounty_program')}]\n")
             
             # Deploy mission to Hunter Agent via subprocess
             asyncio.create_task(self._execute_mission(mission_id))
