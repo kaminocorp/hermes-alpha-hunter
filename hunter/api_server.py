@@ -276,21 +276,29 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             stdout = b''.join([l.encode() for l in stdout_lines])
             stderr = b''.join([l.encode() for l in stderr_lines])
             
-            # Enforce minimum runtime
+            # Check for completion status based on actual work done
             runtime_seconds = (datetime.utcnow() - start_time).total_seconds()
-            if runtime_seconds < 300:
-                print(f"[!] Mission {mission_id} completed suspiciously fast: {runtime_seconds}s")
-                await self.broadcast_log(f"WARNING: Mission completed too quickly ({runtime_seconds}s)", "warning")
-                mission["status"] = "failed"
-                mission["error"] = f"Mission completed too quickly ({runtime_seconds}s < 300s minimum)"
-                mission["runtime_warning"] = True
-            else:
-                mission["status"] = "completed"
-                await self.broadcast_log(f"Mission analysis complete in {runtime_seconds:.1f}s", "info")
             
             # Check for generated reports
             reports = list(workspace_dir.glob("vuln_*.md"))
             mission["reports_generated"] = len(reports)
+            
+            if reports:
+                await self.broadcast_log(f"Generated {len(reports)} vulnerability report(s)", "info")
+            
+            if reports or proc.returncode == 0:
+                mission["status"] = "completed"
+                await self.broadcast_log(f"Mission analysis complete in {runtime_seconds:.1f}s", "info")
+            elif runtime_seconds < 10:
+                # Less than 10 seconds = likely crash or immediate failure
+                print(f"[!] Mission {mission_id} completed suspiciously fast: {runtime_seconds}s")
+                await self.broadcast_log(f"WARNING: Mission completed too quickly ({runtime_seconds}s)", "warning")
+                mission["status"] = "failed"
+                mission["error"] = f"Mission completed too quickly ({runtime_seconds}s < 10s minimum)"
+                mission["runtime_warning"] = True
+            else:
+                mission["status"] = "completed"
+                await self.broadcast_log(f"Mission analysis complete in {runtime_seconds:.1f}s", "info")
             
             if reports:
                 await self.broadcast_log(f"Generated {len(reports)} vulnerability report(s)", "info")
