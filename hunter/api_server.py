@@ -102,6 +102,8 @@ class HunterAPI:
             "active_missions": len([m for m in self.missions.values() if m["status"] in ["deployed", "active"]]),
             "total_missions": len(self.missions),
             "uptime": datetime.utcnow().isoformat()
+        }, headers={
+            'Access-Control-Allow-Origin': '*'
         })
     
     async def get_mission(self, request: web_request.Request) -> Response:
@@ -442,7 +444,9 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             }
         }
         
-        return web.json_response(metrics)
+        return web.json_response(metrics, headers={
+            'Access-Control-Allow-Origin': '*'
+        })
 
     def _calculate_avg_duration(self, completed_missions: List[dict]) -> str:
         """Calculate average mission duration"""
@@ -491,6 +495,7 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*',
             }
         )
         await response.prepare(request)
