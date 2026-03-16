@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_001_input_validation.md",
+  "mission_id": "c505271d-d9c2-4a15-9b85-a54f8778503d",
+  "discovered_at": "2026-03-16T09:29:41.174141",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-16T13:00:31.920576"
+}

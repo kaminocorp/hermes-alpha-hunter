@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_002_ssrf_federation.md",
+  "mission_id": "51dc2dcb-821e-4b33-92fa-be5b15d49f5e",
+  "discovered_at": "2026-03-16T07:30:56.895005",
+  "target_context": {
+    "target": "https://github.com/nextcloud/server",
+    "bounty_program": "Nextcloud Bug Bounty (HackerOne)",
+    "repository": "https://github.com/nextcloud/server",
+    "mission_objectives": [
+      "Find IDOR in file sharing",
+      "Find auth bypass",
+      "Find SSRF in federation",
+      "Find XSS",
+      "Find privilege escalation"
+    ]
+  },
+  "archived_at": "2026-03-16T13:00:31.931820"
+}

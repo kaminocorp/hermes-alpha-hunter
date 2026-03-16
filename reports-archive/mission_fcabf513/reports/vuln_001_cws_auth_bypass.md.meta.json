@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_001_cws_auth_bypass.md",
+  "mission_id": "fcabf513-da57-4cba-9493-98feccbe849f",
+  "discovered_at": "2026-03-16T10:02:27.226090",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-16T13:00:31.928563"
+}
