@@ -168,10 +168,25 @@ BOUNTY RANGE: {mission.get('bounty_range', 'N/A')}
 
 *** CRITICAL STABILITY PROTOCOL ***
 1. NEVER use git clone - crashes DeepSeek-V3. Use web_extract for code analysis.
-2. Save intermediate findings immediately using write_file to /workspace/
+2. Save intermediate findings immediately using write_file to /workspace/mission_{mission['id']}/
 3. Generate partial reports every 10 minutes as checkpoint files
-4. If you discover ANY vulnerability, write it to /workspace/vuln_{{id}}.md immediately
+4. If you discover ANY vulnerability, write it to /workspace/mission_{mission['id']}/vuln_{{id}}.md immediately
 5. Use session timeouts of max 300 seconds to prevent hangs
+
+*** REPORT FORMAT REQUIREMENT - MANDATORY ***
+Every vulnerability report MUST include this header at the top:
+```
+# Vulnerability Report
+
+**Mission ID:** {mission['id']}
+**Target:** {mission['target']}
+**Bounty Program:** {mission['bounty_program']}
+**Repository:** {mission.get('repository', 'N/A')}
+**Discovery Date:** [current date]
+---
+```
+
+This context is REQUIRED for all reports. Do not omit it.
 
 *** OBJECTIVES ***
 {chr(10).join(f"- {obj}" for obj in mission.get('objectives', []))}
@@ -184,13 +199,13 @@ Phase 1: Repository Analysis (NO GIT CLONE - use web_extract)
 
 Phase 2: Vulnerability Discovery
 - Focus on: {', '.join(['Authentication bypasses', 'IDOR', 'Privilege escalation', 'API vulnerabilities'])}
-- Document each finding in /workspace/vuln_{{finding_id}}.md immediately
+- Document each finding in /workspace/mission_{mission['id']}/vuln_{{finding_id}}.md immediately with full target context
 - Generate PoC for each vulnerability (sandbox only)
 
 Phase 3: Report Generation  
 - Create detailed vulnerability reports with impact assessment
 - Include reproduction steps and remediation advice
-- Save all reports to /workspace/ for persistence
+- Save all reports to /workspace/mission_{mission['id']}/ for persistence
 
 Execute this mission systematically. Your goal: find and document high-value vulnerabilities for bug bounty submission.
 
@@ -200,7 +215,7 @@ You are operating autonomously. Do NOT ask for user input or guidance. Complete 
 2. Review API endpoints for IDOR vulnerabilities  
 3. Check privilege escalation paths
 4. Examine group transfer functionality for IDOR+XSS
-5. Generate final vulnerability reports in /workspace/
+5. Generate final vulnerability reports in /workspace/mission_{mission['id']}/
 
 Continue analyzing through ALL objectives without stopping for input. Make decisions autonomously.
 """
@@ -408,10 +423,20 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             with open(vuln_file, 'r') as f:
                 content = f.read()
             
+            # Extract mission_id from path
+            mission_id = vuln_file.parent.name.replace('mission_', '')
+            mission = self.missions.get(mission_id, {})
+            
             return web.json_response({
                 "success": True,
                 "id": vuln_id,
                 "file": str(vuln_file),
+                "mission_id": mission_id,
+                "target_context": {
+                    "target": mission.get("target", "Unknown"),
+                    "bounty_program": mission.get("bounty_program", "Unknown"),
+                    "repository": mission.get("repository", "N/A")
+                },
                 "content": content,
                 "discovered_at": datetime.fromtimestamp(vuln_file.stat().st_mtime).isoformat()
             })
@@ -420,6 +445,45 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
                 "success": False,
                 "error": str(e)
             }, status=500)
+
+    async def get_reports(self, request: web_request.Request) -> Response:
+        """Get all vulnerability reports with full mission context"""
+        reports = []
+        
+        # Search all mission workspaces for report files
+        for report_file in Path("/workspace").glob("**/*.md"):
+            if not report_file.name.startswith(("vuln_", "MISSION_", "QUICK_")):
+                continue
+                
+            try:
+                with open(report_file, 'r') as f:
+                    content = f.read()
+                
+                # Extract mission_id from path
+                mission_id = report_file.parent.name.replace('mission_', '')
+                mission = self.missions.get(mission_id, {})
+                
+                reports.append({
+                    "file": str(report_file),
+                    "filename": report_file.name,
+                    "mission_id": mission_id,
+                    "target_context": {
+                        "target": mission.get("target", "Unknown"),
+                        "bounty_program": mission.get("bounty_program", "Unknown"),
+                        "repository": mission.get("repository", "N/A"),
+                        "mission_objectives": mission.get("objectives", [])
+                    },
+                    "discovered_at": datetime.fromtimestamp(report_file.stat().st_mtime).isoformat(),
+                    "preview": content[:300] + "..." if len(content) > 300 else content
+                })
+            except Exception as e:
+                print(f"Error reading report file {report_file}: {e}")
+        
+        return web.json_response({
+            "success": True,
+            "count": len(reports),
+            "reports": reports
+        })
 
     async def get_metrics(self, request: web_request.Request) -> Response:
         """Get real-time system and performance metrics"""
@@ -621,6 +685,7 @@ async def create_app() -> web.Application:
     # New endpoints for live data
     app.router.add_get("/api/vulnerabilities", hunter_api.get_vulnerabilities)
     app.router.add_get("/api/vulnerabilities/{vuln_id}", hunter_api.get_vulnerability)
+    app.router.add_get("/api/reports", hunter_api.get_reports)
     app.router.add_get("/api/metrics", hunter_api.get_metrics)
     app.router.add_get("/api/logs/stream", hunter_api.stream_logs)
     
