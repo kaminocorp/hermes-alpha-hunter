@@ -225,14 +225,15 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             print(f"[!] Mission {mission_id} failed tool validation: {mission['error']}")
             return
 
-        # Run Hunter Agent subprocess with timeout and monitoring  
+        # Run Hunter Agent subprocess with timeout and monitoring
+        # Note: Using -q for single query mode with the full mission prompt
+        # The Hunter's SOUL.md and skills provide the methodology context
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
-            "--no-auth", 
-            "--model", "deepseek/deepseek-v3",
-            "--system-prompt-append", prompt,
+            "-m", "deepseek/deepseek-v3",
+            "-q", prompt,
             "--yolo",
-            "--max-turns", "150",
+            "-Q",  # Quiet mode for programmatic use
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd="/app",
