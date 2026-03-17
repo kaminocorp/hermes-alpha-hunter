@@ -270,6 +270,22 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
         # Note: Using -q for single query mode with the full mission prompt
         # The Hunter's SOUL.md and skills provide the methodology context
         # Using qwen3.5-plus which is confirmed available on OpenRouter
+        # Ensure Elephantasm env vars are explicitly passed (critical for memory capture)
+        hunter_env = {
+            **dict(os.environ),
+            'HERMES_SESSION_TYPE': 'hunter',
+            'HERMES_MISSION_ID': mission_id,
+            'HERMES_WORKSPACE': f'/workspace/mission_{mission_id}',
+            'HERMES_HOME': '/root/.hermes'
+        }
+        
+        # Explicitly ensure Elephantasm credentials are inherited
+        # These are set as Fly.io secrets and must be passed to subprocess
+        if os.getenv('ELEPHANTASM_API_KEY'):
+            hunter_env['ELEPHANTASM_API_KEY'] = os.getenv('ELEPHANTASM_API_KEY')
+        if os.getenv('ELEPHANTASM_ANIMA_ID'):
+            hunter_env['ELEPHANTASM_ANIMA_ID'] = os.getenv('ELEPHANTASM_ANIMA_ID')
+        
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
             "-m", "qwen/qwen3.5-plus-02-15",
@@ -279,13 +295,7 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd="/app",
-            env={
-                **dict(os.environ),
-                'HERMES_SESSION_TYPE': 'hunter',
-                'HERMES_MISSION_ID': mission_id,
-                'HERMES_WORKSPACE': f'/workspace/mission_{mission_id}',
-                'HERMES_HOME': '/root/.hermes'
-            }
+            env=hunter_env
         )
         
         # Monitor process with timeout and stream logs
@@ -349,6 +359,11 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             mission["stdout"] = stdout.decode() if stdout else ""
             mission["stderr"] = stderr.decode() if stderr else ""
             mission["duration"] = f"{runtime_seconds:.1f}s"
+            
+            # Log Elephantasm status for debugging
+            elephantasm_status = "ENABLED" if os.getenv('ELEPHANTASM_API_KEY') else "DISABLED (no API key)"
+            anima_id = os.getenv('ELEPHANTASM_ANIMA_ID', 'NOT SET')
+            await self.broadcast_log(f"Elephantasm: {elephantasm_status}, Anima: {anima_id}", "info")
             
         except asyncio.TimeoutError:
             proc.kill()
