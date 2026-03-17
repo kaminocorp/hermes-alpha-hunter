@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_003_api_endpoints_analysis.md",
+  "mission_id": "47be74ee-f9f3-4078-bb8e-cc0b9c2afc9e",
+  "discovered_at": "2026-03-17T11:13:40.349471",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T13:04:59.716878"
+}

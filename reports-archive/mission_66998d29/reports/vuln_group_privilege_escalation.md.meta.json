@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_group_privilege_escalation.md",
+  "mission_id": "66998d29-9a63-4ed2-9b93-3e8c068abca1",
+  "discovered_at": "2026-03-17T11:04:21.245189",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T13:04:59.716000"
+}
