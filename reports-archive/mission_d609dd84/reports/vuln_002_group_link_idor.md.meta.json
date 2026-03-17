@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_002_group_link_idor.md",
+  "mission_id": "d609dd84-9838-4c7f-b538-161a5af93021",
+  "discovered_at": "2026-03-17T18:50:00.546178",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T19:05:51.849971"
+}

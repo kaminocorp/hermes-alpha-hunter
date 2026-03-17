@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_002_xss_emoji_false_positive.md",
+  "mission_id": "667b43bf-59ba-4787-af18-9026c8bc0fc9",
+  "discovered_at": "2026-03-17T18:42:19.748652",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T19:05:51.851243"
+}

@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_003_access_control_cel.md",
+  "mission_id": "2d2e443e-bc6c-4009-a68c-8a673148293a",
+  "discovered_at": "2026-03-17T18:22:26.545542",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T19:05:51.852035"
+}

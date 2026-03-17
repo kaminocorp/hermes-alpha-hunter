@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_004_oauth_implicit_flow.md",
+  "mission_id": "52deeb8a-f0ee-4e10-8e6f-402d7a85fba5",
+  "discovered_at": "2026-03-17T13:52:50.642699",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T19:05:51.850915"
+}

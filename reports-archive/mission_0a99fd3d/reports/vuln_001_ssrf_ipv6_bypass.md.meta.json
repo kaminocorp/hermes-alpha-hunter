@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_001_ssrf_ipv6_bypass.md",
+  "mission_id": "0a99fd3d-0c4f-4325-9c05-9237f471bd67",
+  "discovered_at": "2026-03-17T18:28:21.184478",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-17T19:05:51.849453"
+}
