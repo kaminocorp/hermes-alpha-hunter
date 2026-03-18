@@ -454,10 +454,13 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
         elephantasm_id = os.getenv('ELEPHANTASM_ANIMA_ID')
         
         # Log debug info about Elephantasm config
-        print(f"[DEBUG] Parent process - Elephantasm API key present: {bool(elephantasm_key)}")
-        print(f"[DEBUG] Parent process - Elephantasm Anima ID: {elephantasm_id}")
-        print(f"[DEBUG] hunter_env will contain ELEPHANTASM_API_KEY: {'ELEPHANTASM_API_KEY' in hunter_env}")
-        print(f"[DEBUG] hunter_env will contain ELEPHANTASM_ANIMA_ID: {'ELEPHANTASM_ANIMA_ID' in hunter_env}")
+        import sys
+        sys.stdout.flush()
+        print(f"[DEBUG] Parent process - Elephantasm API key: {'SET' if elephantasm_key else 'MISSING'}")
+        print(f"[DEBUG] Parent process - Elephantasm Anima ID: {elephantasm_id or 'MISSING'}")
+        print(f"[DEBUG] hunter_env has ELEPHANTASM_API_KEY: {'ELEPHANTASM_API_KEY' in hunter_env}")
+        print(f"[DEBUG] hunter_env has ELEPHANTASM_ANIMA_ID: {'ELEPHANTASM_ANIMA_ID' in hunter_env}")
+        sys.stdout.flush()
         
         if elephantasm_key:
             hunter_env['ELEPHANTASM_API_KEY'] = elephantasm_key
@@ -466,6 +469,7 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
         
         print(f"[DEBUG] After assignment - ELEPHANTASM_API_KEY in hunter_env: {'ELEPHANTASM_API_KEY' in hunter_env}")
         print(f"[DEBUG] After assignment - ELEPHANTASM_ANIMA_ID in hunter_env: {'ELEPHANTASM_ANIMA_ID' in hunter_env}")
+        sys.stdout.flush()
         
         # Note: Remove -Q to get verbose output including Elephantasm events
         # Quiet mode suppresses all logger output including Elephantasm extraction logs
