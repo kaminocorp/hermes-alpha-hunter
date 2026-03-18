@@ -429,6 +429,12 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
             print(f"[!] Mission {mission_id} failed tool validation: {mission['error']}")
             return
 
+        # Inject Elephantasm memory at mission start
+        elephantasm_memory = await self._inject_elephantasm_memory()
+        if elephantasm_memory:
+            prompt = elephantasm_memory + "\n\n" + prompt
+            await self.broadcast_log(f"Elephantasm memory injected: {len(elephantasm_memory)} chars", "info")
+
         # Run Hunter Agent subprocess with timeout and monitoring
         # Note: Using -q for single query mode with the full mission prompt
         # The Hunter's SOUL.md and skills provide the methodology context
@@ -444,17 +450,26 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
         
         # Explicitly ensure Elephantasm credentials are inherited
         # These are set as Fly.io secrets and must be passed to subprocess
-        if os.getenv('ELEPHANTASM_API_KEY'):
-            hunter_env['ELEPHANTASM_API_KEY'] = os.getenv('ELEPHANTASM_API_KEY')
-        if os.getenv('ELEPHANTASM_ANIMA_ID'):
-            hunter_env['ELEPHANTASM_ANIMA_ID'] = os.getenv('ELEPHANTASM_ANIMA_ID')
+        elephantasm_key = os.getenv('ELEPHANTASM_API_KEY')
+        elephantasm_id = os.getenv('ELEPHANTASM_ANIMA_ID')
         
+        # Log debug info about Elephantasm config
+        print(f"[DEBUG] Elephantasm API key present: {bool(elephantasm_key)}")
+        print(f"[DEBUG] Elephantasm Anima ID: {elephantasm_id}")
+        
+        if elephantasm_key:
+            hunter_env['ELEPHANTASM_API_KEY'] = elephantasm_key
+        if elephantasm_id:
+            hunter_env['ELEPHANTASM_ANIMA_ID'] = elephantasm_id
+        
+        # Note: Remove -Q to get verbose output including Elephantasm events
+        # Quiet mode suppresses all logger output including Elephantasm extraction logs
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
             "-m", "qwen/qwen3.5-plus-02-15",
             "-q", prompt,
             "--yolo",
-            "-Q",  # Quiet mode for programmatic use
+            # Removed -Q flag to allow Elephantasm extraction logs to appear in stdout
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd="/app",
@@ -475,6 +490,8 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
                         break
                     decoded = line.decode()
                     lines_list.append(decoded)
+                    # Also print to console for Fly.io logs
+                    print(f"[{prefix}] {decoded.strip()}")
                     # Broadcast to SSE subscribers
                     await self.broadcast_log(f"{prefix}: {decoded.strip()}", "info")
             
@@ -493,7 +510,9 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
             # Check for completion status based on actual work done
             runtime_seconds = (datetime.utcnow() - start_time).total_seconds()
             
-            # Check for generated reports and VALIDATE them
+            # Extract to Elephantasm at mission end
+            await self._extract_elephantasm_memory(mission_id, stdout.decode(), stderr.decode())
+            
             reports = list(workspace_dir.glob("vuln_*.md"))
             valid_reports = []
             invalid_reports = []
@@ -568,6 +587,52 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
             mission["error"] = str(e)
             await self.broadcast_log(f"Mission crashed: {str(e)}", "error")
             print(f"[!] Mission {mission_id} crashed: {e}")
+    
+    async def _inject_elephantasm_memory(self) -> str:
+        """Inject Elephantasm memory at mission start"""
+        api_key = os.getenv('ELEPHANTASM_API_KEY')
+        anima_id = os.getenv('ELEPHANTASM_ANIMA_ID')
+        
+        if not api_key or not anima_id:
+            print("[Elephantasm] Not configured")
+            return ""
+        
+        try:
+            from elephantasm import Elephantasm
+            client = Elephantasm(api_key=api_key, anima_id=anima_id)
+            pack = client.inject()
+            if pack:
+                prompt_text = pack.as_prompt()
+                client.close()
+                if prompt_text.strip():
+                    print(f"[Elephantasm] Injected: {pack.token_count} tokens")
+                    return prompt_text
+            client.close()
+            return ""
+        except Exception as e:
+            print(f"[Elephantasm] Inject failed: {e}")
+            return ""
+    
+    async def _extract_elephantasm_memory(self, mission_id: str, stdout: str, stderr: str) -> None:
+        """Extract mission summary to Elephantasm"""
+        api_key = os.getenv('ELEPHANTASM_API_KEY')
+        anima_id = os.getenv('ELEPHANTASM_ANIMA_ID')
+        
+        if not api_key or not anima_id:
+            return
+        
+        try:
+            from elephantasm import Elephantasm, EventType
+            client = Elephantasm(api_key=api_key, anima_id=anima_id)
+            summary = f"Mission {mission_id[:8]} completed"
+            if "vuln_" in stdout:
+                count = stdout.count("vuln_")
+                summary += f". Generated {count} vulnerability reports"
+            client.extract(EventType.SYSTEM, summary[:2000], meta={"mission_id": mission_id})
+            client.close()
+            print(f"[Elephantasm] Extracted mission summary")
+        except Exception as e:
+            print(f"[Elephantasm] Extract failed: {e}")
     
     async def get_health(self, request: web_request.Request) -> Response:
         """Health check endpoint"""

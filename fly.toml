@@ -35,3 +35,6 @@ primary_region = "sin"
   PYTHONUNBUFFERED = "1"
   HERMES_HOME = "/root/.hermes"
   HERMES_YOLO_MODE = "1"
+  # Elephantasm memory - references Fly.io secrets
+  ELEPHANTASM_API_KEY = "${ELEPHANTASM_API_KEY}"
+  ELEPHANTASM_ANIMA_ID = "${ELEPHANTASM_ANIMA_ID}"
