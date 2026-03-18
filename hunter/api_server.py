@@ -473,6 +473,18 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
         
         # Note: Remove -Q to get verbose output including Elephantasm events
         # Quiet mode suppresses all logger output including Elephantasm extraction logs
+        # Test: Write Hunter's environment to a file for debugging
+        with open(f"/workspace/mission_{mission_id}/hunter_env.txt", "w") as f:
+            for key, val in sorted(hunter_env.items()):
+                if 'KEY' in key or 'TOKEN' in key or 'SECRET' in key:
+                    f.write(f"{key}=***REDACTED***\n")
+                else:
+                    f.write(f"{key}={val}\n")
+        
+        print(f"[DEBUG] hunter_env written to /workspace/mission_{mission_id}/hunter_env.txt")
+        import sys
+        sys.stdout.flush()
+        
         proc = await asyncio.create_subprocess_exec(
             "hermes", "chat",
             "-m", "qwen/qwen3.5-plus-02-15",
