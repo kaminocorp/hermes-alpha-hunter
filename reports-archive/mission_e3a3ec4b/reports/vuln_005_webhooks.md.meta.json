@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_005_webhooks.md",
+  "mission_id": "e3a3ec4b-ed4b-4123-8bbc-526c3c9ad7a4",
+  "discovered_at": "2026-03-18T01:25:41.654333",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-18T07:07:46.952114"
+}

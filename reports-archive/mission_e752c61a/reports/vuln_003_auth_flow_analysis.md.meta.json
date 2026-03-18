@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_003_auth_flow_analysis.md",
+  "mission_id": "e752c61a-2399-4470-b303-9a343da78c41",
+  "discovered_at": "2026-03-18T02:11:26.219024",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-18T07:07:46.944764"
+}

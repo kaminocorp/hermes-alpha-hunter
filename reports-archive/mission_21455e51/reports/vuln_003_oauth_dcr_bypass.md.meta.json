@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_003_oauth_dcr_bypass.md",
+  "mission_id": "21455e51-5d94-4962-9228-5caf881a96e6",
+  "discovered_at": "2026-03-18T03:37:49.856738",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-18T07:07:46.952907"
+}

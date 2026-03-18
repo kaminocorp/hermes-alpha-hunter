@@ -1,0 +1,12 @@
+{
+  "filename": "vuln_003_sso_endpoint.md",
+  "mission_id": "findings",
+  "discovered_at": "2026-03-18T03:48:30.371534",
+  "target_context": {
+    "target": "Unknown",
+    "bounty_program": "Unknown",
+    "repository": "N/A",
+    "mission_objectives": []
+  },
+  "archived_at": "2026-03-18T07:07:46.949241"
+}
