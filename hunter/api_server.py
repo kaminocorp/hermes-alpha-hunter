@@ -199,51 +199,214 @@ BOUNTY RANGE: {mission.get('bounty_range', 'N/A')}
 4. If you discover ANY vulnerability, write it to /workspace/mission_{mission['id']}/vuln_{{id}}.md immediately
 5. Use session timeouts of max 300 seconds to prevent hangs
 
-*** REPORT FORMAT REQUIREMENT - MANDATORY ***
-Every vulnerability report MUST include this header at the top:
-```
+*** REPORT WRITING PROTOCOL - CRITICAL ***
+When you discover a vulnerability, write the report in SECTIONS to avoid truncation:
+1. First write the header + title + summary (use write_file with overwrite=False to create)
+2. Then APPEND each section separately (Description, PoC, Impact, Remediation)
+3. NEVER write the entire report in one call - split into 3-4 separate write operations
+4. Each section must be complete before moving to the next
+5. Target report size: 2000-5000 bytes minimum for a complete finding
+
+*** VULNERABILITY REPORT TEMPLATE - MANDATORY ***
+Every vulnerability report MUST follow this exact structure. Copy this template:
+
+```markdown
 # Vulnerability Report
 
 **Mission ID:** {mission['id']}
 **Target:** {mission['target']}
 **Bounty Program:** {mission['bounty_program']}
 **Repository:** {mission.get('repository', 'N/A')}
-**Discovery Date:** [current date]
+**Discovery Date:** YYYY-MM-DD
+**Report ID:** VULN-{{sequential_number}}
 ---
+
+## Executive Summary
+
+{{2-3 sentences describing the vulnerability in plain language. What is it? Where is it? Why does it matter?}}
+
+## Severity Assessment
+
+**CVSS Score:** {{e.g., 7.5 High}}
+**Bounty Severity:** {{Low/Medium/High/Critical}}
+**Likelihood:** {{Easy/Moderate/Difficult to exploit}}
+**Impact:** {{What an attacker can achieve}}
+
+## Vulnerability Details
+
+### Affected Component
+
+**File(s):** `{{path/to/file.go}}`
+**Function(s):** `{{functionName()}}`
+**Line Numbers:** {{start-end}}
+**API Endpoint:** `{{/api/v4/endpoint}}` (if applicable)
+
+### Root Cause
+
+{{Explain WHY this vulnerability exists. What assumption was wrong? What check is missing? What validation is insufficient?}}
+
+### Technical Description
+
+{{Detailed explanation of the vulnerability mechanism. Include code snippets showing the vulnerable code.}}
+
+```go
+{{// Vulnerable code snippet - 10-20 lines showing the issue}}
 ```
 
-This context is REQUIRED for all reports. Do not omit it.
+## Proof of Concept
 
-*** OBJECTIVES ***
+### Prerequisites
+
+- {{What the attacker needs: user account, specific permissions, etc.}}
+
+### Attack Steps
+
+1. {{Step 1: specific action}}
+2. {{Step 2: specific action}}
+3. {{Step 3: what happens}}
+4. {{Step 4: the exploit succeeds}}
+
+### HTTP Request/Response (if applicable)
+
+```http
+POST /api/v4/vulnerable-endpoint HTTP/1.1
+Host: target.com
+Authorization: Bearer {{token}}
+
+{{request_body}}
+```
+
+```http
+HTTP/1.1 200 OK
+{{response showing the vulnerability}}
+```
+
+### Exploit Code (if applicable)
+
+```bash
+{{curl command or script that demonstrates the vulnerability}}
+```
+
+## Impact Analysis
+
+### What Attackers Can Achieve
+
+- {{Specific capability 1}}
+- {{Specific capability 2}}
+- {{Specific capability 3}}
+
+### Business Impact
+
+{{How this affects the target organization: data breach, account takeover, financial loss, reputation damage, etc.}}
+
+### Affected Users
+
+{{Who is impacted: all users, admins only, specific roles, etc.}}
+
+## Reproduction Steps
+
+{{Numbered list that anyone can follow to reproduce this vulnerability in a test environment}}
+
+1. {{Step 1}}
+2. {{Step 2}}
+3. {{Step 3}}
+4. {{Verify the vulnerability}}
+
+## Remediation Recommendations
+
+### Immediate Fix
+
+{{Code-level fix with example}}
+
+```go
+{{// Fixed code snippet showing proper validation/checks}}
+```
+
+### Additional Hardening
+
+- {{Additional security measure 1}}
+- {{Additional security measure 2}}
+- {{Additional security measure 3}}
+
+## References
+
+- {{Relevant OWASP Top 10 category}}
+- {{Similar CVEs or security advisories}}
+- {{Framework documentation links}}
+
+## Appendix: Full Code Context
+
+{{If helpful, include 30-50 lines of surrounding code for full context}}
+```
+
+---
+
+## OBJECTIVES
+
 {chr(10).join(f"- {obj}" for obj in mission.get('objectives', []))}
 
-*** METHODOLOGY ***
-Phase 1: Repository Analysis (NO GIT CLONE - use web_extract)
+---
+
+## METHODOLOGY
+
+### Phase 1: Repository Analysis (NO GIT CLONE - use web_extract)
 - Extract source code from GitHub/GitLab web interface  
 - Map application structure and entry points
 - Identify authentication and authorization mechanisms
 
-Phase 2: Vulnerability Discovery
-- Focus on: {', '.join(['Authentication bypasses', 'IDOR', 'Privilege escalation', 'API vulnerabilities'])}
-- Document each finding in /workspace/mission_{mission['id']}/vuln_{{finding_id}}.md immediately with full target context
-- Generate PoC for each vulnerability (sandbox only)
+### Phase 2: Vulnerability Discovery
+- Focus on: {', '.join(['Authentication bypasses', 'IDOR', 'Privilege escalation', 'API vulnerabilities', 'SSRF in integrations/webhooks', 'XSS vectors'])}
+- For EACH finding: write a COMPLETE report following the template above
+- Generate PoC for each vulnerability (sandbox only - NEVER test against production)
 
-Phase 3: Report Generation  
-- Create detailed vulnerability reports with impact assessment
-- Include reproduction steps and remediation advice
+### Phase 3: Report Generation  
+- Ensure every report has ALL sections from the template
+- Minimum report size: 2000 bytes (reject incomplete reports)
 - Save all reports to /workspace/mission_{mission['id']}/ for persistence
 
-Execute this mission systematically. Your goal: find and document high-value vulnerabilities for bug bounty submission.
+---
 
-*** AUTONOMOUS OPERATION PROTOCOL ***
+## AUTONOMOUS OPERATION PROTOCOL
+
 You are operating autonomously. Do NOT ask for user input or guidance. Complete all phases automatically:
-1. Analyze authentication mechanisms (JWT, OAuth, session handling)
-2. Review API endpoints for IDOR vulnerabilities  
-3. Check privilege escalation paths
-4. Examine group transfer functionality for IDOR+XSS
-5. Generate final vulnerability reports in /workspace/mission_{mission['id']}/
+
+1. Analyze authentication mechanisms (JWT, OAuth, session handling, SSO)
+2. Review API endpoints for IDOR vulnerabilities (check userId, channelId, teamId parameters)
+3. Check privilege escalation paths (role changes, permission checks, admin functions)
+4. Examine webhooks/integrations for SSRF (URL parameters, outgoing requests)
+5. Look for XSS vectors (user input rendered without escaping)
+6. For EACH vulnerability found: write a COMPLETE report using the template above
+
+**CRITICAL**: Write reports in SECTIONS using multiple write_file calls:
+- Call 1: Header + Executive Summary + Severity
+- Call 2: Vulnerability Details + Root Cause + Code Snippets  
+- Call 3: PoC + Impact Analysis
+- Call 4: Remediation + References
+
+**DO NOT** write the entire report in one write_file call - it will truncate.
+
+---
+
+## QUALITY STANDARDS
+
+A report is NOT complete until it has:
+✅ Executive Summary (what/where/why)
+✅ Severity Assessment (CVSS score, bounty severity)
+✅ Affected Component (files, functions, lines, endpoints)
+✅ Root Cause Explanation (why the bug exists)
+✅ Technical Description with code snippets
+✅ Proof of Concept (steps + HTTP requests or exploit code)
+✅ Impact Analysis (what attackers achieve, business impact)
+✅ Reproduction Steps (numbered, reproducible)
+✅ Remediation Recommendations (with fixed code example)
+✅ Minimum 2000 bytes total
+
+If any section is missing, the report is INCOMPLETE. Go back and fill it in.
+
+---
 
 Continue analyzing through ALL objectives without stopping for input. Make decisions autonomously.
+When you find a vulnerability, STOP analysis and write the COMPLETE report BEFORE continuing.
 """
 
     async def _run_hunter_with_recovery(self, mission_id: str, prompt: str):
@@ -330,14 +493,44 @@ Continue analyzing through ALL objectives without stopping for input. Make decis
             # Check for completion status based on actual work done
             runtime_seconds = (datetime.utcnow() - start_time).total_seconds()
             
-            # Check for generated reports
+            # Check for generated reports and VALIDATE them
             reports = list(workspace_dir.glob("vuln_*.md"))
-            mission["reports_generated"] = len(reports)
+            valid_reports = []
+            invalid_reports = []
             
-            if reports:
-                await self.broadcast_log(f"Generated {len(reports)} vulnerability report(s)", "info")
+            for report_file in reports:
+                file_size = report_file.stat().st_size
+                if file_size < 1000:
+                    invalid_reports.append((report_file.name, file_size, "Too small (<1000 bytes)"))
+                else:
+                    with open(report_file, 'r') as f:
+                        content = f.read()
+                    # Check for required sections
+                    required_sections = [
+                        "Executive Summary",
+                        "Severity",
+                        "Vulnerability Details",
+                        "Proof of Concept",
+                        "Impact",
+                        "Remediation"
+                    ]
+                    missing = [s for s in required_sections if s not in content]
+                    if missing:
+                        invalid_reports.append((report_file.name, file_size, f"Missing sections: {', '.join(missing)}"))
+                    else:
+                        valid_reports.append(report_file)
             
-            if reports or proc.returncode == 0:
+            mission["reports_generated"] = len(valid_reports)
+            mission["reports_invalid"] = len(invalid_reports)
+            
+            if valid_reports:
+                await self.broadcast_log(f"Generated {len(valid_reports)} VALID vulnerability report(s)", "info")
+            if invalid_reports:
+                for name, size, reason in invalid_reports:
+                    await self.broadcast_log(f"INVALID REPORT: {name} - {size} bytes - {reason}", "error")
+                await self.broadcast_log(f"WARNING: {len(invalid_reports)} incomplete reports detected. Re-run analysis for these findings.", "warning")
+            
+            if valid_reports or proc.returncode == 0:
                 mission["status"] = "completed"
                 await self.broadcast_log(f"Mission analysis complete in {runtime_seconds:.1f}s", "info")
             elif runtime_seconds < 10:
