@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_001_oauth_client_id_confusion.md",
+  "mission_id": "dc8549c8-5e62-4654-9ef5-c435ed3ae3ba",
+  "discovered_at": "2026-03-18T19:02:58.591526",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-18T19:08:34.140369"
+}

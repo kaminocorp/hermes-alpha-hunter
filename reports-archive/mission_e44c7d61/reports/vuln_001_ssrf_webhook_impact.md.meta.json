@@ -1,0 +1,14 @@
+{
+  "filename": "vuln_001_ssrf_webhook_impact.md",
+  "mission_id": "e44c7d61-0d42-4a4a-9e86-237ea9537fcb",
+  "discovered_at": "2026-03-18T13:43:41.780541",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "test"
+    ]
+  },
+  "archived_at": "2026-03-18T19:08:34.139740"
+}

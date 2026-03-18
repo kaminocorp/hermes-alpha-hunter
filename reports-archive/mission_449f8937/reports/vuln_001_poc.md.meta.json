@@ -1,0 +1,18 @@
+{
+  "filename": "vuln_001_poc.md",
+  "mission_id": "449f8937-dfa6-4f00-bb49-4c7172d267ba",
+  "discovered_at": "2026-03-18T16:21:13.294174",
+  "target_context": {
+    "target": "https://github.com/mattermost/mattermost",
+    "bounty_program": "Mattermost Bug Bounty (HackerOne)",
+    "repository": null,
+    "mission_objectives": [
+      "Find authentication bypasses",
+      "Find IDOR vulnerabilities",
+      "Find XSS vulnerabilities",
+      "Find SSRF in integrations/webhooks",
+      "Document all findings with PoC"
+    ]
+  },
+  "archived_at": "2026-03-18T19:08:34.137265"
+}
