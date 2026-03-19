@@ -1400,11 +1400,12 @@ Acknowledge receipt and execute this command. Report back your actions."""
             pack = client.inject()
             
             if pack:
-                identity_text = pack.identity
+                # IdentityContext needs to be converted to string
+                identity_data = str(pack.identity) if pack.identity else "(no identity)"
                 client.close()
                 return web.json_response({
                     "anima_id": anima_id,
-                    "identity": identity_text
+                    "identity": identity_data
                 })
             else:
                 client.close()
