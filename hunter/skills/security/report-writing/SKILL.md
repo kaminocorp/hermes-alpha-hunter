@@ -1,9 +1,18 @@
 ---
 title: Vulnerability Report Writing
-description: Write bounty-ready vulnerability reports in HackerOne format
-tags: [security, reporting, hackerone, bounty]
+description: Produce bounty-ready vulnerability reports with evidence-based severity calibration
+tags: [security, reporting, hackerone, bounty, severity, evidence]
 ---
 # Vulnerability Report Writing
+
+## Core Principle: Evidence Over Theory
+
+**Never report a vulnerability without:**
+1. A reproducible proof of concept
+2. Clear explanation of the exploit path
+3. Demonstration of actual impact (not theoretical)
+
+If you cannot demonstrate exploitation in a sandbox, do not report it as High/Critical.
 
 ## When to Use
 After verifying a vulnerability. Every confirmed finding must have a report.
@@ -28,6 +37,47 @@ One paragraph: what the vulnerability is, where it is, and what an attacker can 
 ## Severity
 - **Rating**: Critical / High / Medium / Low
 - **CVSS 3.1 Score**: X.X
+
+### Severity Justification Framework
+
+**Critical Severity** - Assign when ALL are true:
+- [ ] Exploitable without authentication (or auth bypass exists)
+- [ ] Direct impact on CIA triad (Confidentiality, Integrity, Availability)
+- [ ] Affects production data/users (not staging/test)
+- [ ] PoC demonstrates full exploit chain
+- [ ] No user interaction required (or minimal: click one link)
+
+**High Severity** - Assign when:
+- [ ] Requires basic authentication (but bypasses authorization)
+- [ ] Clear exploit path with ≤3 steps
+- [ ] Impacts sensitive data or critical functionality
+- [ ] PoC is reproducible and documented
+- [ ] Affects multiple users or high-value targets
+
+**Medium Severity** - Assign when:
+- [ ] Requires specific conditions or user interaction
+- [ ] Limited scope (single user, non-sensitive data)
+- [ ] Exploit requires multiple steps or complex setup
+- [ ] Impact is constrained or mitigated by other controls
+
+**Low Severity** - Assign when:
+- [ ] Theoretical without clear exploit path
+- [ ] Requires already-compromised state
+- [ ] Minor information disclosure (non-sensitive)
+- [ ] Best practice violation without demonstrated impact
+
+### Severity Calibration Checklist
+
+**Before assigning severity, verify:**
+
+### For Critical/High:
+- [ ] Can I write a 3-step PoC?
+- [ ] Does the PoC work in a fresh environment?
+- [ ] Is the impact demonstrable (not theoretical)?
+- [ ] Would a reasonable person agree this is severe?
+- [ ] Have I ruled out mitigating controls?
+
+**RED FLAG**: If you're hesitating on severity, it's probably lower than you think.
 - **CVSS Vector**: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N
 - **Bounty Range**: $X,XXX - $X,XXX (estimated)
 
