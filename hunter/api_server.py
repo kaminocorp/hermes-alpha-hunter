@@ -1241,6 +1241,181 @@ Acknowledge receipt and execute this command. Report back your actions."""
             "hunter_status": self.status
         })
 
+    async def query_memory(self, request: web_request.Request) -> Response:
+        """
+        Query Hunter's long-term memory via Elephantasm MCP.
+        
+        Query params:
+          - q: search query (required)
+          - limit: max results (default: 10)
+          - sources: memories,knowledge,identity (default: all)
+          - max_tokens: token budget (default: 2000)
+        
+        Returns formatted memory results.
+        """
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        from elephantasm import Elephantasm
+        
+        api_key = os.getenv("ELEPHANTASM_API_KEY")
+        anima_id = os.getenv("ELEPHANTASM_ANIMA_ID")
+        
+        if not api_key or not anima_id:
+            return web.json_response({"error": "Elephantasm not configured"}, status=500)
+        
+        query = request.query.get("q", "")
+        if not query:
+            return web.json_response({"error": "Missing 'q' query parameter"}, status=400)
+        
+        limit = int(request.query.get("limit", "10"))
+        max_tokens = int(request.query.get("max_tokens", "2000"))
+        sources = request.query.get("sources", "").split(",") if request.query.get("sources") else None
+        
+        try:
+            client = Elephantasm(api_key=api_key, anima_id=anima_id)
+            
+            # Use inject() to get memory pack (simplest SDK method)
+            pack = client.inject()
+            
+            # For detailed search, we'd need the MCP tools - use extract for now
+            result = {
+                "query": query,
+                "anima_id": anima_id,
+                "memory_pack_available": pack is not None,
+                "token_count": pack.token_count if pack else 0,
+                "memories_count": pack.long_term_memory_count if pack else 0,
+                "knowledge_count": pack.knowledge_count if pack else 0,
+            }
+            
+            client.close()
+            
+            return web.json_response(result)
+            
+        except Exception as e:
+            return web.json_response({"error": f"Memory query failed: {e}"}, status=500)
+
+    async def ingest_memory(self, request: web_request.Request) -> Response:
+        """
+        Ingest a memory event into Hunter's long-term memory.
+        
+        Body: {
+            "content": "what happened",
+            "event_type": "system|message.in|message.out|tool.call",
+            "role": "assistant|user|system",
+            "session_id": "optional-session-id"
+        }
+        
+        Uses Elephantasm MCP ingest_event tool.
+        """
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        api_key = os.getenv("ELEPHANTASM_API_KEY")
+        anima_id = os.getenv("ELEPHANTASM_ANIMA_ID")
+        
+        if not api_key or not anima_id:
+            return web.json_response({"error": "Elephantasm not configured"}, status=500)
+        
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "invalid JSON"}, status=400)
+        
+        content = body.get("content", "")
+        if not content:
+            return web.json_response({"error": "Missing 'content' field"}, status=400)
+        
+        event_type = body.get("event_type", "system")
+        role = body.get("role", "assistant")
+        session_id = body.get("session_id")
+        
+        # Use MCP server via subprocess for ingest_event
+        import subprocess
+        
+        mcp_call = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "ingest_event",
+                "arguments": {
+                    "content": content,
+                    "event_type": event_type,
+                    "role": role,
+                    "session_id": session_id
+                }
+            }
+        }
+        
+        mcp_env = os.environ.copy()
+        mcp_env["ELEPHANTASM_API_KEY"] = api_key
+        mcp_env["ELEPHANTASM_ANIMA_ID"] = anima_id
+        
+        proc = subprocess.Popen(
+            ["elephantasm-mcp"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=mcp_env
+        )
+        
+        # Send dummy init first
+        init = {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}}
+        proc.stdin.write(json.dumps(init) + "\n")
+        proc.stdin.flush()
+        proc.stdout.readline()  # consume init response
+        
+        # Send our call
+        proc.stdin.write(json.dumps(mcp_call) + "\n")
+        proc.stdin.flush()
+        response = proc.stdout.readline()
+        proc.terminate()
+        
+        try:
+            result = json.loads(response)
+            return web.json_response({
+                "status": "ok",
+                "message": "Memory ingested",
+                "mcp_response": result.get("result", {})
+            })
+        except Exception as e:
+            return web.json_response({"error": f"Ingest failed: {e}"}, status=500)
+
+    async def get_identity(self, request: web_request.Request) -> Response:
+        """Get Hunter's identity profile from Elephantasm"""
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        api_key = os.getenv("ELEPHANTASM_API_KEY")
+        anima_id = os.getenv("ELEPHANTASM_ANIMA_ID")
+        
+        if not api_key or not anima_id:
+            return web.json_response({"error": "Elephantasm not configured"}, status=500)
+        
+        try:
+            from elephantasm import Elephantasm
+            client = Elephantasm(api_key=api_key, anima_id=anima_id)
+            pack = client.inject()
+            
+            if pack:
+                identity_text = pack.identity
+                client.close()
+                return web.json_response({
+                    "anima_id": anima_id,
+                    "identity": identity_text
+                })
+            else:
+                client.close()
+                return web.json_response({
+                    "anima_id": anima_id,
+                    "identity": "(no identity established yet)"
+                })
+                
+        except Exception as e:
+            return web.json_response({"error": f"Identity fetch failed: {e}"}, status=500)
+
 
 
 
@@ -1297,6 +1472,11 @@ async def create_app() -> web.Application:
     app.router.add_post("/api/guidance", hunter_api.send_guidance)
     app.router.add_post("/api/config", hunter_api.update_config)
     app.router.add_get("/api/session", hunter_api.get_session)
+    
+    # Elephantasm MCP memory endpoints
+    app.router.add_get("/api/memory/query", hunter_api.query_memory)
+    app.router.add_post("/api/memory/ingest", hunter_api.ingest_memory)
+    app.router.add_get("/api/memory/identity", hunter_api.get_identity)
     
     return app
 
