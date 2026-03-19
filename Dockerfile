@@ -31,7 +31,7 @@ COPY . /app
 RUN npm install && npm run postinstall
 
 # ── Python deps ──────────────────────────────────────────────────────────────
-RUN pip install --no-cache-dir -e '.[all]' && pip install --no-cache-dir aiohttp elephantasm
+RUN pip install --no-cache-dir -e '.[all]' && pip install --no-cache-dir aiohttp elephantasm elephantasm-mcp
 
 # ── Hermes home structure (~/.hermes) ────────────────────────────────────────
 RUN mkdir -p /root/.hermes/skills /root/.hermes/sessions /root/.hermes/logs \

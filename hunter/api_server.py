@@ -1306,7 +1306,7 @@ Acknowledge receipt and execute this command. Report back your actions."""
             "session_id": "optional-session-id"
         }
         
-        Uses Elephantasm MCP ingest_event tool.
+        Note: Writes to mission log for now. Full MCP ingest requires elephantasm-mcp in PATH.
         """
         if not _check_overseer_auth(request):
             return web.json_response({"error": "unauthorized"}, status=401)
@@ -1327,61 +1327,30 @@ Acknowledge receipt and execute this command. Report back your actions."""
             return web.json_response({"error": "Missing 'content' field"}, status=400)
         
         event_type = body.get("event_type", "system")
-        role = body.get("role", "assistant")
         session_id = body.get("session_id")
         
-        # Use MCP server via subprocess for ingest_event
-        import subprocess
-        
-        mcp_call = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "tools/call",
-            "params": {
-                "name": "ingest_event",
-                "arguments": {
-                    "content": content,
-                    "event_type": event_type,
-                    "role": role,
-                    "session_id": session_id
-                }
-            }
+        # Log to mission log (MCP ingest requires elephantasm-mcp binary which isn't in container PATH)
+        # Future: Add elephantasm-mcp to Dockerfile or use SDK directly if API supports it
+        event_log = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "anima_id": anima_id,
+            "event_type": event_type,
+            "content": content,
+            "session_id": session_id
         }
         
-        mcp_env = os.environ.copy()
-        mcp_env["ELEPHANTASM_API_KEY"] = api_key
-        mcp_env["ELEPHANTASM_ANIMA_ID"] = anima_id
+        # Append to memory ingestion log
+        memory_log_path = Path("/workspace/memory_events.jsonl")
+        with open(memory_log_path, "a") as f:
+            f.write(json.dumps(event_log) + "\n")
         
-        proc = subprocess.Popen(
-            ["elephantasm-mcp"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=mcp_env
-        )
+        await self.broadcast_log(f"[MEMORY INGEST] {content[:80]}...", "info")
         
-        # Send dummy init first
-        init = {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}}
-        proc.stdin.write(json.dumps(init) + "\n")
-        proc.stdin.flush()
-        proc.stdout.readline()  # consume init response
-        
-        # Send our call
-        proc.stdin.write(json.dumps(mcp_call) + "\n")
-        proc.stdin.flush()
-        response = proc.stdout.readline()
-        proc.terminate()
-        
-        try:
-            result = json.loads(response)
-            return web.json_response({
-                "status": "ok",
-                "message": "Memory ingested",
-                "mcp_response": result.get("result", {})
-            })
-        except Exception as e:
-            return web.json_response({"error": f"Ingest failed: {e}"}, status=500)
+        return web.json_response({
+            "status": "ok",
+            "message": "Event logged for memory synthesis",
+            "note": "Full MCP ingestion requires elephantasm-mcp in container PATH"
+        })
 
     async def get_identity(self, request: web_request.Request) -> Response:
         """Get Hunter's identity profile from Elephantasm"""
