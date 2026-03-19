@@ -2,18 +2,37 @@
 """
 Hermes Alpha Hunter — API Server
 Direct control interface for the Overseer to deploy missions and check status.
+
+Overseer Communication Endpoints:
+  POST /api/command     — Send direct instruction to Hunter (get response)
+  POST /api/guidance    — Provide guidance/hints for current analysis
+  POST /api/config      — Update Hunter configuration (model, params)
+  GET  /api/session     — Get current session state
 """
 import os
 import asyncio
 import json
 import uuid
 import glob
+import subprocess
 from datetime import datetime
 from typing import Dict, List, Optional
 from pathlib import Path
 
 from aiohttp import web, web_request
 from aiohttp.web_response import Response
+
+
+# Overseer API Token for authentication
+OVERSEER_TOKEN = os.getenv("OVERSEER_API_TOKEN", "")
+
+
+def _check_overseer_auth(request: web_request.Request) -> bool:
+    """Validate Overseer API token from Authorization header"""
+    if not OVERSEER_TOKEN:
+        return True  # No token set = no auth required
+    auth = request.headers.get("Authorization", "")
+    return auth == f"Bearer {OVERSEER_TOKEN}"
 
 
 class HunterAPI:
@@ -24,7 +43,9 @@ class HunterAPI:
         self.status = "idle"
         self.mission_log_path = Path("/workspace/missions.log")
         self.log_subscribers: List[web.StreamResponse] = []
-        self.recent_logs: List[dict] = []  # In-memory log buffer for new subscribers
+        self.recent_logs: List[dict] = []
+        self.command_history: List[dict] = []
+        self.hunter_session_id: Optional[str] = None
         
         # Ensure workspace exists
         Path("/workspace").mkdir(exist_ok=True)
@@ -958,6 +979,268 @@ When you find a vulnerability, STOP analysis and write the COMPLETE report BEFOR
             "message": f"Mission {mission_id} cancelled"
         })
 
+    async def send_command(self, request: web_request.Request) -> Response:
+        """
+        Send a direct command/instruction to the Hunter agent.
+        
+        Body: {
+            "command": "your instruction",
+            "timeout": 300,  # optional, max 600
+            "priority": "normal"  # or "high" for urgent
+        }
+        
+        Returns: {
+            "status": "ok|timeout|error",
+            "response": "agent's reply",
+            "command_id": "..."
+        }
+        """
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "invalid JSON"}, status=400)
+        
+        command_text = body.get("command", "").strip()
+        if not command_text:
+            return web.json_response({"error": "empty command"}, status=400)
+        
+        timeout = min(body.get("timeout", 300), 600)
+        priority = body.get("priority", "normal")
+        command_id = str(uuid.uuid4())
+        
+        # Log the command
+        cmd_entry = {
+            "command_id": command_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "command": command_text,
+            "priority": priority,
+            "timeout": timeout
+        }
+        self.command_history.append(cmd_entry)
+        if len(self.command_history) > 100:
+            self.command_history = self.command_history[-100:]
+        
+        await self.broadcast_log(f"[OVERSEER COMMAND] {command_text[:100]}...", "info")
+        
+        # Execute command via hermes chat
+        try:
+            # Build the command prompt
+            prompt = f"""[OVERSEER DIRECTIVE - PRIORITY: {priority.upper()}]
+
+The Overseer has issued a direct command. Follow this instruction immediately:
+
+{command_text}
+
+Acknowledge receipt and execute this command. Report back your actions."""
+            
+            # Get current active mission context
+            active_mission = None
+            for m in self.missions.values():
+                if m.get("status") in ["active", "deployed"]:
+                    active_mission = m
+                    break
+            
+            if active_mission:
+                prompt = f"""Context: You are on mission {active_mission['id'][:8]} analyzing {active_mission.get('target', 'unknown')}
+
+{prompt}"""
+            
+            # Run hermes chat with the command
+            proc = await asyncio.create_subprocess_exec(
+                "hermes", "chat",
+                "-m", "qwen/qwen3.5-plus-02-15",
+                "-q", prompt,
+                "--yolo",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd="/app",
+                env=os.environ
+            )
+            
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(),
+                    timeout=timeout
+                )
+                response = stdout.decode() if stdout else ""
+                
+                return web.json_response({
+                    "status": "ok",
+                    "command_id": command_id,
+                    "response": response[:5000] if response else "(no output)",
+                    "exit_code": proc.returncode
+                })
+                
+            except asyncio.TimeoutError:
+                await self.broadcast_log(f"[OVERSEER COMMAND TIMEOUT] Command {command_id[:8]} exceeded {timeout}s", "warning")
+                proc.kill()
+                return web.json_response({
+                    "status": "timeout",
+                    "command_id": command_id,
+                    "response": f"Command timed out after {timeout}s. Hunter may still be processing."
+                }, status=504)
+                
+        except Exception as e:
+            await self.broadcast_log(f"[OVERSEER COMMAND ERROR] {str(e)}", "error")
+            return web.json_response({
+                "status": "error",
+                "command_id": command_id,
+                "error": str(e)
+            }, status=500)
+
+    async def send_guidance(self, request: web_request.Request) -> Response:
+        """
+        Provide guidance/hints to the Hunter for current analysis.
+        Less urgent than commands - adds context rather than direct orders.
+        
+        Body: {"guidance": "your hints/context", "area": "optional focus area"}
+        """
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "invalid JSON"}, status=400)
+        
+        guidance_text = body.get("guidance", "").strip()
+        area = body.get("area", "general")
+        
+        if not guidance_text:
+            return web.json_response({"error": "empty guidance"}, status=400)
+        
+        guidance_id = str(uuid.uuid4())
+        
+        # Write guidance to a file the Hunter can read
+        guidance_file = Path("/workspace/overseer_guidance.json")
+        guidance_data = {
+            "guidance_id": guidance_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "area": area,
+            "guidance": guidance_text
+        }
+        
+        # Append to existing guidance or create new
+        existing = []
+        if guidance_file.exists():
+            try:
+                with open(guidance_file) as f:
+                    existing = json.load(f)
+            except:
+                existing = []
+        
+        existing.append(guidance_data)
+        if len(existing) > 20:
+            existing = existing[-20:]
+        
+        with open(guidance_file, "w") as f:
+            json.dump(existing, f, indent=2)
+        
+        await self.broadcast_log(f"[OVERSEER GUIDANCE] Area: {area} - {guidance_text[:80]}...", "info")
+        
+        return web.json_response({
+            "status": "ok",
+            "guidance_id": guidance_id,
+            "message": "Guidance saved. Hunter will read on next iteration."
+        })
+
+    async def update_config(self, request: web_request.Request) -> Response:
+        """
+        Update Hunter configuration dynamically.
+        
+        Body: {
+            "model": "deepseek/deepseek-chat-v3-0324",  # optional
+            "reasoning_effort": "high",  # optional
+            "max_turns": 100  # optional
+        }
+        """
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "invalid JSON"}, status=400)
+        
+        config_path = Path("/root/.hermes/config.yaml")
+        if not config_path.exists():
+            return web.json_response({"error": "config file not found"}, status=500)
+        
+        import yaml
+        
+        try:
+            with open(config_path) as f:
+                config = yaml.safe_load(f)
+            
+            changes = []
+            
+            # Update model settings
+            if "model" in body:
+                if "model" not in config:
+                    config["model"] = {}
+                config["model"]["default"] = body["model"]
+                changes.append(f"model={body['model']}")
+            
+            if "reasoning_effort" in body:
+                if "agent" not in config:
+                    config["agent"] = {}
+                config["agent"]["reasoning_effort"] = body["reasoning_effort"]
+                changes.append(f"reasoning_effort={body['reasoning_effort']}")
+            
+            if "max_turns" in body:
+                if "agent" not in config:
+                    config["agent"] = {}
+                config["agent"]["max_turns"] = body["max_turns"]
+                changes.append(f"max_turns={body['max_turns']}")
+            
+            if not changes:
+                return web.json_response({"error": "no valid config keys provided"}, status=400)
+            
+            # Write updated config
+            with open(config_path, "w") as f:
+                yaml.dump(config, f, default_flow_style=False)
+            
+            await self.broadcast_log(f"[CONFIG UPDATE] {', '.join(changes)}", "info")
+            
+            return web.json_response({
+                "status": "ok",
+                "changes": changes,
+                "message": "Config updated. Takes effect on next Hunter invocation."
+            })
+            
+        except Exception as e:
+            return web.json_response({"error": f"config update failed: {e}"}, status=500)
+
+    async def get_session(self, request: web_request.Request) -> Response:
+        """Get current Hunter session state"""
+        if not _check_overseer_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        
+        sessions_dir = Path("/root/.hermes/sessions")
+        active_sessions = []
+        
+        if sessions_dir.exists():
+            for f in sessions_dir.glob("*.json"):
+                try:
+                    with open(f) as sf:
+                        data = json.load(sf)
+                        active_sessions.append({
+                            "session_id": f.stem,
+                            "last_activity": data.get("last_activity", "unknown"),
+                            "message_count": len(data.get("messages", []))
+                        })
+                except:
+                    pass
+        
+        return web.json_response({
+            "active_sessions": active_sessions,
+            "command_history": self.command_history[-20:],
+            "hunter_status": self.status
+        })
+
 
 
 
@@ -1008,6 +1291,12 @@ async def create_app() -> web.Application:
     app.router.add_get("/api/reports", hunter_api.get_reports)
     app.router.add_get("/api/metrics", hunter_api.get_metrics)
     app.router.add_get("/api/logs/stream", hunter_api.stream_logs)
+    
+    # Overseer direct communication endpoints
+    app.router.add_post("/api/command", hunter_api.send_command)
+    app.router.add_post("/api/guidance", hunter_api.send_guidance)
+    app.router.add_post("/api/config", hunter_api.update_config)
+    app.router.add_get("/api/session", hunter_api.get_session)
     
     return app
 
