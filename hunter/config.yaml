@@ -4,7 +4,7 @@
 # =============================================================================
 
 model:
-  default: "deepseek/deepseek-v3"
+  default: "deepseek/deepseek-chat-v3-0324"
   provider: "openrouter"
   base_url: "https://openrouter.ai/api/v1"
 
